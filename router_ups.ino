@@ -1,59 +1,68 @@
 /*
- Input Pullup Serial
-
- This example demonstrates the use of pinMode(INPUT_PULLUP). It reads a
- digital input on pin 2 and prints the results to the serial monitor.
-
- The circuit:
- * Momentary switch attached from pin 2 to ground
- * Built-in LED on pin 13
-
- Unlike pinMode(INPUT), there is no pull-down resistor necessary. An internal
- 20K-ohm resistor is pulled to 5V. This configuration causes the input to
- read HIGH when the switch is open, and LOW when it is closed.
-
- created 14 March 2012
- by Scott Fitzgerald
-
- http://www.arduino.cc/en/Tutorial/InputPullupSerial
-
- This example code is in the public domain
-
+2017 Stephen Byers
  */
 
+float killThreshold = 10.8;
+
 void setup() {
-  //start serial connection
+
   Serial.begin(9600);
-  //configure pin2 as an input and enable the internal pull-up resistor
   pinMode(2, INPUT_PULLUP);
+  pinMode(3, OUTPUT);
+  pinMode(4, OUTPUT);
   pinMode(11, OUTPUT);
   pinMode(12, OUTPUT);
   pinMode(13, OUTPUT);
-  
-
+  attachInterrupt(digitalPinToInterrupt(2),powerLoss,RISING); //PIN2 Pulled high when no AC power
+  digitalWrite(3, LOW);
+  digitalWrite(4, HIGH);
+  delay(100);
+  digitalWrite(4, LOW);
 }
 
 void loop() {
-  //read the pushbutton value into a variable
-  int sensorVal = digitalRead(2);
-  //print out the value of the pushbutton
-  Serial.println(sensorVal);
 
-  // Keep in mind the pullup means the pushbutton's
-  // logic is inverted. It goes HIGH when it's open,
-  // and LOW when it's pressed. Turn on pin 13 when the
-  // button's pressed, and off when it's not:
+  int sensorVal = digitalRead(2);
+  
+
+
   if (sensorVal == HIGH) {
     digitalWrite(11, LOW);
     digitalWrite(12, LOW);
     digitalWrite(13, LOW);
+    Serial.print("ON BATTERY ... ");
+    int rawVolt = analogRead(5);
+    float voltage = (rawVolt * 0.004883 + 10);
+    Serial.print("Voltage = ");
+    Serial.print(voltage);
+    Serial.println("V");
+
+    if (voltage <= killThreshold) {
+      Serial.println("VOLTAGE CRITICAL - SENDING KILL SWITCH!");
+      digitalWrite(3, HIGH);
+      delay(100);
+    }
+    
   } else {
     digitalWrite(11, HIGH);
     digitalWrite(12, HIGH);
     digitalWrite(13, HIGH);
-    
-  }
+    Serial.println("ON LINE POWER");
+   }
+delay(2000);
+
 }
 
+
+
+
+void powerLoss() {
+
+  
+  digitalWrite(11, LOW);
+  digitalWrite(12, LOW);
+  digitalWrite(13, LOW);
+  Serial.println("POWERLOSS DETECTED!");
+}
 
 
